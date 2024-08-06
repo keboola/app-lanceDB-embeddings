@@ -1,0 +1,46 @@
+{
+    "type": "object",
+    "title": "Lance Embedder",
+    "required": [
+      "embedColumn",
+      "#apiKey",
+      "model"
+    ],
+    "properties": {
+      "model": {
+        "enum": [
+          "small_03",
+          "large_03",
+          "ada_002"
+        ],
+        "type": "string",
+        "title": "Embedding model",
+        "default": "small_03",
+        "options": {
+          "enum_titles": [
+            "text-embedding-3-small",
+            "text-embedding-3-large",
+            "text-embedding-ada-002"
+          ]
+        },
+        "propertyOrder": 3
+      },
+      "#apiKey": {
+        "type": "string",
+        "title": "OpenAI API Key",
+        "format": "password",
+        "default": "",
+        "minLength": 1,
+        "description": "API Key for embedding model",
+        "propertyOrder": 2
+      },
+      "embedColumn": {
+        "type": "string",
+        "title": "Column to Embed",
+        "default": "",
+        "minLength": 1,
+        "description": "Column to be embedded by chosen function",
+        "propertyOrder": 1
+      }
+    }
+  }
