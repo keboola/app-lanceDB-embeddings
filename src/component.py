@@ -1,5 +1,3 @@
-# component.py
-
 import os
 import zipfile
 import pandas as pd
@@ -10,6 +8,12 @@ from keboola.component.base import ComponentBase
 from keboola.component.exceptions import UserException
 
 from configuration import Configuration
+
+MODEL_MAPPING = {
+    "small_03": "text-embedding-3-small",
+    "large_03": "text-embedding-3-large",
+    "ada_002": "text-embedding-ada-002"
+}
 
 class EmbeddingComponent(ComponentBase):
     def __init__(self):
@@ -24,14 +28,14 @@ class EmbeddingComponent(ComponentBase):
     def configure(self):
         self._configuration = Configuration.load_from_dict(self.configuration.parameters)
         
-        api_key = self._configuration.embedding_config.pswd_api_key
+        api_key = self._configuration.pswd_api_key
         if not api_key:
             raise UserException("OpenAI API key is missing from the configuration.")
 
         os.environ["OPENAI_API_KEY"] = api_key
         self.client = OpenAI()
 
-        self.model = self._configuration.embedding_config.model
+        self.model = MODEL_MAPPING[self._configuration.model]
         self.vector_size = self.get_vector_size(self.model)
 
         os.makedirs("data/out/files", exist_ok=True)
@@ -52,7 +56,7 @@ class EmbeddingComponent(ComponentBase):
         input_table = self.get_input_table_definition()
         df = pd.read_csv(input_table.full_path)
 
-        embed_column = self._configuration.embedding_config.embed_column
+        embed_column = self._configuration.embed_column
         if embed_column not in df.columns:
             raise UserException(f"'{embed_column}' column not found in the input CSV file")
 

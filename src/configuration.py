@@ -1,5 +1,3 @@
-# configuration.py
-
 import dataclasses
 import json
 from dataclasses import dataclass
@@ -33,11 +31,7 @@ class ConfigurationBase:
                 and f.default_factory == dataclasses.MISSING]
 
 @dataclass
-class EmbeddingConfig(ConfigurationBase):
+class Configuration(ConfigurationBase):
     embed_column: str
     pswd_api_key: str
     model: str
-
-@dataclass
-class Configuration(ConfigurationBase):
-    embedding_config: EmbeddingConfig
