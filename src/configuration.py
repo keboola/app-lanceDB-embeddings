@@ -5,6 +5,7 @@ from typing import List
 
 import dataconf
 
+
 class ConfigurationBase:
     @staticmethod
     def _convert_private_value(value: str):
@@ -30,8 +31,10 @@ class ConfigurationBase:
                 if f.default == dataclasses.MISSING
                 and f.default_factory == dataclasses.MISSING]
 
+
 @dataclass
 class Configuration(ConfigurationBase):
     embed_column: str
     pswd_api_key: str
     model: str
+
