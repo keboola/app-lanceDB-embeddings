@@ -1,0 +1,1 @@
+https://github.com/Nweaver412/LanceDB-Component/blob/master/LICENSE.md
