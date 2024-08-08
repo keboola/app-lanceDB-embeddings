@@ -23,4 +23,3 @@ class Configuration(BaseModel):
         if not v.isupper():
             raise UserException('API token must be uppercase')
         return v
-
