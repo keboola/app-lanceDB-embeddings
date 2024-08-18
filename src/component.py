@@ -1,100 +1,96 @@
-"""
-Template Component main class.
-
-"""
 import csv
-from datetime import datetime
 import logging
-
 from keboola.component.base import ComponentBase
 from keboola.component.exceptions import UserException
-
 from configuration import Configuration
-
+from openai import OpenAI
 
 class Component(ComponentBase):
-    """
-        Extends base class for general Python components. Initializes the CommonInterface
-        and performs configuration validation.
-
-        For easier debugging the data folder is picked up by default from `../data` path,
-        relative to working directory.
-
-        If `debug` parameter is present in the `config.json`, the default logger is set to verbose DEBUG mode.
-    """
-
     def __init__(self):
         super().__init__()
+        self._configuration = None
+        self.client = None
 
     def run(self):
-        """
-        Main execution code
-        """
+        self.init_configuration()
+        self.init_client()
+        try:
+            input_table = self._get_input_table()
+            print(f"Input table retrieved: {input_table.full_path}")
+            
+            output_table = self._get_output_table()
+            print(f"Output table created: {output_table.full_path}")
+            
+            with open(input_table.full_path, 'r', encoding='utf-8') as input_file, \
+                 open(output_table.full_path, 'w', encoding='utf-8', newline='') as output_file:
+                
+                reader = csv.DictReader(input_file)
+                fieldnames = reader.fieldnames + ['embedding']
+                writer = csv.DictWriter(output_file, fieldnames=fieldnames)
+                writer.writeheader()
 
-        # ####### EXAMPLE TO REMOVE
-        # check for missing configuration parameters
-        params = Configuration(**self.configuration.parameters)
+                row_count = 0
+                for row in reader:
+                    row_count += 1
+                    if row_count % 100 == 0:
+                        print(f"Processing row {row_count}")
+                    text = row[self._configuration.embedColumn]
+                    embedding = self.get_embedding(text)
+                    row['embedding'] = embedding
+                    writer.writerow(row)
+                    
+                    # Print the embedding (first 25 characters if longer)
+                    embedding_str = str(embedding)
+                    print_embedding = embedding_str[:25] + "..." if len(embedding_str) > 25 else embedding_str
+                    print(f"Embedding for row {row_count}: {print_embedding}")
 
-        # Access parameters in configuration
-        if params.print_hello:
-            logging.info("Hello World")
+            print(f"Embedding process completed. Total rows processed: {row_count}")
+            print(f"Output saved to {output_table.full_path}")
+        except Exception as e:
+            print(f"Error occurred during embedding process: {str(e)}")
+            raise UserException(f"Error occurred during embedding process: {str(e)}")
 
-        # get input table definitions
-        input_tables = self.get_input_tables_definitions()
-        for table in input_tables:
-            logging.info(f'Received input table: {table.name} with path: {table.full_path}')
+    def init_configuration(self):
+        self.validate_configuration_parameters(Configuration.get_dataclass_required_parameters())
+        self._configuration: Configuration = Configuration.load_from_dict(self.configuration.parameters)
+        print(f"Configuration initialized. Using model: {self._configuration.model}")
 
-        if len(input_tables) == 0:
-            raise UserException("No input tables found")
+    def init_client(self):
+        self.client = OpenAI(api_key=self._configuration.pswd_apiKey)
 
-        # get last state data/in/state.json from previous run
-        previous_state = self.get_state_file()
-        logging.info(previous_state.get('some_parameter'))
+    def get_embedding(self, text):
+        print("Getting embedding for text")
+        try:
+            response = self.client.embeddings.create(input=[text], model=self._configuration.model)
+            print("Embedding received")
+            return response.data[0].embedding
+        except Exception as e:
+            print(f"Error getting embedding: {str(e)}")
+            raise UserException(f"Error getting embedding: {str(e)}")
 
-        # Create output table (Table definition - just metadata)
-        table = self.create_out_table_definition('output.csv', incremental=True, primary_key=['timestamp'])
+    def _get_input_table(self):
+        if not self.get_input_tables_definitions():
+            raise UserException("No input table specified. Please provide one input table in the input mapping!")
+        if len(self.get_input_tables_definitions()) > 1:
+            raise UserException("Only one input table is supported")
+        return self.get_input_tables_definitions()[0]
 
-        # get file path of the table (data/out/tables/Features.csv)
-        out_table_path = table.full_path
-        logging.info(out_table_path)
+    def _get_output_table(self):
+        print("Creating output table definition")
+        output_table = self.create_out_table_definition('embeddings.csv')
+        print("Output table definition created")
+        return output_table
 
-        # Add timestamp column and save into out_table_path
-        input_table = input_tables[0]
-        with (open(input_table.full_path, 'r') as inp_file,
-              open(table.full_path, mode='wt', encoding='utf-8', newline='') as out_file):
-            reader = csv.DictReader(inp_file)
-
-            columns = list(reader.fieldnames)
-            # append timestamp
-            columns.append('timestamp')
-
-            # write result with column added
-            writer = csv.DictWriter(out_file, fieldnames=columns)
-            writer.writeheader()
-            for in_row in reader:
-                in_row['timestamp'] = datetime.now().isoformat()
-                writer.writerow(in_row)
-
-        # Save table manifest (output.csv.manifest) from the Table definition
-        self.write_manifest(table)
-
-        # Write new state - will be available next run
-        self.write_state_file({"some_state_parameter": "value"})
-
-        # ####### EXAMPLE TO REMOVE END
-
-
-"""
-        Main entrypoint
-"""
 if __name__ == "__main__":
+    print("Script started")
     try:
         comp = Component()
-        # this triggers the run method by default and is controlled by the configuration.action parameter
         comp.execute_action()
     except UserException as exc:
+        print(f"UserException occurred: {str(exc)}")
         logging.exception(exc)
         exit(1)
     except Exception as exc:
+        print(f"Unexpected exception occurred: {str(exc)}")
         logging.exception(exc)
         exit(2)

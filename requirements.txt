@@ -1,6 +1,8 @@
-keboola.component
-keboola.utils
-keboola.http-client
-freezegun
-mock
-pydantic
+dataconf==3.2.0
+freezegun==1.2.2
+keboola.component==1.4.4
+keboola.utils==1.1.0
+lancedb==0.12.0
+mock==4.0.3
+openai==1.40.1
+pandas==2.2.2

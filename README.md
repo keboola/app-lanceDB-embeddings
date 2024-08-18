@@ -1,4 +1,4 @@
-lancedb
+Embed LanceDB
 =============
 
 Description
@@ -63,8 +63,8 @@ Clone this repository, init the workspace and run the component with following
 command:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-git clone https://github.com/Nweaver412/LanceDB-Component kds-team.lancedb
-cd kds-team.lancedb
+git clone https://github.com/Nweaver412/kds-team.embed-lancedb kds-team.embed-lancedb
+cd kds-team.embed-lancedb
 docker-compose build
 docker-compose run --rm dev
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

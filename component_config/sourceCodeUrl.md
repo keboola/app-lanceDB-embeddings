@@ -1,1 +1,1 @@
-https://github.com/Nweaver412/LanceDB-Component
+https://github.com/Nweaver412/kds-team.embed-lancedb

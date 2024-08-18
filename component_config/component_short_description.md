@@ -1,1 +1,1 @@
-Embed and store in LanceDB
+Short Desc
