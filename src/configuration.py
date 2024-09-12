@@ -31,13 +31,20 @@ class ConfigurationBase:
                 and f.default_factory == dataclasses.MISSING]
 
 @dataclass
+class Destination(ConfigurationBase):
+    incremental_load: bool
+    output_table_name: str
+    primary_keys: str
+
+@dataclass
 class Configuration(ConfigurationBase):
     embedColumn: str
     pswd_apiKey: str
     model: str
+    destination: Destination
+    outputFormat: str = "csv"
 
     def __post_init__(self):
-        # Map the enum values to their corresponding model names
         model_mapping = {
             "small_03": "text-embedding-3-small",
             "large_03": "text-embedding-3-large",
