@@ -23,7 +23,7 @@
           "text-embedding-ada-002"
         ]
       },
-      "propertyOrder": 3
+      "propertyOrder": 2
     },
     "#apiKey": {
       "type": "string",
@@ -32,15 +32,24 @@
       "default": "",
       "minLength": 1,
       "description": "API Key for embedding model",
-      "propertyOrder": 2
-    },
-    "embedColumn": {
-      "type": "string",
-      "title": "Column to Embed",
-      "default": "",
-      "minLength": 1,
-      "description": "Column to be embedded by chosen function",
       "propertyOrder": 1
+    },
+    "outputFormat": {
+      "enum": [
+        "csv",
+        "lance"
+      ],
+      "type": "string",
+      "title": "Output Format",
+      "default": "csv",
+      "options": {
+        "enum_titles": [
+          "CSV",
+          "Lance"
+        ]
+      },
+      "description": "Choose the output format for the embeddings",
+      "propertyOrder": 3
     }
   }
 }

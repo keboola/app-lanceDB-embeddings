@@ -1,1 +1,51 @@
-{}
+{
+    "type": "object",
+    "title": "Configuration",
+    "required": [
+      "embedColumn"
+    ],
+    "properties": {
+      "destination": {
+        "type": "object",
+        "title": "Destination",
+        "required": [
+          "output_table_name",
+          "incremental_load",
+          "primary_keys"
+        ],
+        "properties": {
+          "primary_keys": {
+            "type": "string",
+            "title": "Primary Keys",
+            "description": "Primary keys seperated by commas e.g. id, other_id. If a primary key is set, updates can be done on the table by selecting incremental loads. The primary key can consist of multiple columns. The primary key of an existing table cannot be changed.",
+            "propertyOrder": 120
+          },
+          "incremental_load": {
+            "type": "boolean",
+            "title": "Incremental Load",
+            "format": "checkbox",
+            "description": "If incremental load is turned on, the table will be updated instead of rewritten. Tables with a primary key will have rows updated, tables without a primary key will have rows appended.",
+            "propertyOrder": 110
+          },
+          "output_table_name": {
+            "type": "string",
+            "title": "Storage Table Name",
+            "description": "Name of the table stored in Storage.",
+            "propertyOrder": 100
+          }
+        }
+      },
+      "embedColumn": {
+        "type": "string",
+        "title": "Embed column name",
+        "watch": {
+          "columns": "_metadata_.table.columns"
+        },
+        "required": true,
+        "enumSource": "columns",
+        "description": "Choose a column to embed data.",
+        "propertyOrder": 1
+      }
+    },
+    "description": "Configuration for embedding column data"
+  }

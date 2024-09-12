@@ -2,7 +2,8 @@ dataconf==3.2.0
 freezegun==1.2.2
 keboola.component==1.4.4
 keboola.utils==1.1.0
-lancedb==0.12.0
+lancedb==0.13.0
 mock==4.0.3
-openai==1.40.1
+openai==1.44.1
 pandas==2.2.2
+pyarrow==15.0.0
