@@ -27,42 +27,65 @@ class Component(ComponentBase):
             with open(input_table.full_path, 'r', encoding='utf-8') as input_file:
                 reader = csv.DictReader(input_file)
                 if self._configuration.outputFormat == 'lance':
-                    lance_dir = os.path.join(self.tables_out_path, 'lance_db')
-                    os.makedirs(lance_dir, exist_ok=True)
-                    db = lancedb.connect(lance_dir)
-                    schema = self._get_lance_schema(reader.fieldnames)
-                    table = db.create_table("embeddings", schema=schema, mode="overwrite")
+                    lance_dir, table = self._initialize_lance_output(reader.fieldnames)
+                    self._process_rows_lance(reader, table)
                 elif self._configuration.outputFormat == 'csv':
-                    output_table = self._get_output_table()
-                    output_file = open(output_table.full_path, 'w', encoding='utf-8', newline='')
-                    fieldnames = reader.fieldnames + ['embedding']
-                    writer = csv.DictWriter(output_file, fieldnames=fieldnames)
-                    writer.writeheader()
-                data = []
-                row_count = 0
-                for row in reader:
-                    row_count += 1
-                    text = row[self._configuration.embedColumn]
-                    embedding = self.get_embedding(text)
-                    if self._configuration.outputFormat == 'csv':
-                        row['embedding'] = embedding
-                        writer.writerow(row)
-                    else:  # Lance
-                        lance_row = {**row, 'embedding': embedding}
-                        data.append(lance_row)
-                    if self._configuration.outputFormat == 'lance' and row_count % 1000 == 0:
-                        table.add(data)
-                        data = []
-                if self._configuration.outputFormat == 'lance' and data:
-                    table.add(data)
-                if self._configuration.outputFormat == 'csv':
-                    output_file.close()
-                elif self._configuration.outputFormat == 'lance':
-                    self._finalize_lance_output(lance_dir)
-            print(f"Embedding process completed. Total rows processed: {row_count}")
-            print(f"Output saved in {self._configuration.outputFormat} format")
+                    self._process_rows_csv(reader)
         except Exception as e:
             raise UserException(f"Error occurred during embedding process: {str(e)}")
+
+    def _initialize_lance_output(self, fieldnames):
+        lance_dir = os.path.join(self.tables_out_path, 'lance_db')
+        os.makedirs(lance_dir, exist_ok=True)
+        db = lancedb.connect(lance_dir)
+        schema = self._get_lance_schema(fieldnames)
+        table = db.create_table("embeddings", schema=schema, mode="overwrite")
+        return lance_dir, table
+
+    def _process_rows_csv(self, reader):
+        output_table = self._get_output_table()
+        batch_size = 100
+        with open(output_table.full_path, 'w', encoding='utf-8', newline='') as output_file:
+            fieldnames = reader.fieldnames + ['embedding']
+            writer = csv.DictWriter(output_file, fieldnames=fieldnames)
+            writer.writeheader()
+            rows_batch = []
+            texts_batch = []
+            self.row_count = 0
+            for row in reader:
+                self.row_count += 1
+                text = row[self._configuration.embedColumn]
+                rows_batch.append(row)
+                texts_batch.append(text)
+                if len(texts_batch) >= batch_size:
+                    embeddings = self.get_embedding(texts_batch)
+                    for i, row in enumerate(rows_batch):
+                        row['embedding'] = embeddings[i]
+                        writer.writerow(row)
+                    rows_batch = []
+                    texts_batch = []
+            if texts_batch:
+                embeddings = self.get_embedding(texts_batch)
+                for i, row in enumerate(rows_batch):
+                    row['embedding'] = embeddings[i]
+                    writer.writerow(row)
+                
+    def _process_rows_lance(self, reader, table, lance_dir):
+        data = []
+        self.row_count = 0
+        for row in reader:
+            self.row_count += 1
+            text = row[self._configuration.embedColumn]
+            embedding = self.get_embedding(text)
+            lance_row = {**row, 'embedding': embedding}
+            data.append(lance_row)
+            if self.row_count % 1000 == 0:
+                table.add(data)
+                data = []
+        if data:
+            table.add(data)
+        self._finalize_lance_output(lance_dir)
+
         
     def init_configuration(self):
         self.validate_configuration_parameters(Configuration.get_dataclass_required_parameters())
@@ -71,10 +94,10 @@ class Component(ComponentBase):
     def init_client(self):
         self.client = OpenAI(api_key=self._configuration.pswd_apiKey)
 
-    def get_embedding(self, texts):
+    def get_embedding(self, text):
         try:
-            response = self.client.embeddings.create(input=texts, model=self._configuration.model)
-            return [embedding['embedding'] for embedding in response.data]
+            response = self.client.embeddings.create(input=[text], model=self._configuration.model)
+            return response.data[0].embedding
         except Exception as e:
             raise UserException(f"Error getting embedding: {str(e)}")
         
