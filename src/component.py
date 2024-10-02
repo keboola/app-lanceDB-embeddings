@@ -28,19 +28,19 @@ class Component(ComponentBase):
                 reader = csv.DictReader(input_file)
                 if self._configuration.outputFormat == 'lance':
                     lance_dir, table = self._initialize_lance_output(reader.fieldnames)
-                    self._process_rows_lance(reader, table)
+                    # self._process_rows_lance(reader, table)
                 elif self._configuration.outputFormat == 'csv':
                     self._process_rows_csv(reader)
         except Exception as e:
             raise UserException(f"Error occurred during embedding process: {str(e)}")
 
-    def _initialize_lance_output(self, fieldnames):
-        lance_dir = os.path.join(self.tables_out_path, 'lance_db')
-        os.makedirs(lance_dir, exist_ok=True)
-        db = lancedb.connect(lance_dir)
-        schema = self._get_lance_schema(fieldnames)
-        table = db.create_table("embeddings", schema=schema, mode="overwrite")
-        return lance_dir, table
+    # def _initialize_lance_output(self, fieldnames):
+    #     lance_dir = os.path.join(self.tables_out_path, 'lance_db')
+    #     os.makedirs(lance_dir, exist_ok=True)
+    #     db = lancedb.connect(lance_dir)
+    #     schema = self._get_lance_schema(fieldnames)
+    #     table = db.create_table("embeddings", schema=schema, mode="overwrite")
+    #     return lance_dir, table
 
     def _process_rows_csv(self, reader):
         output_table = self._get_output_table()
@@ -70,21 +70,21 @@ class Component(ComponentBase):
                     row['embedding'] = embeddings[i]
                     writer.writerow(row)
                 
-    def _process_rows_lance(self, reader, table, lance_dir):
-        data = []
-        self.row_count = 0
-        for row in reader:
-            self.row_count += 1
-            text = row[self._configuration.embedColumn]
-            embedding = self.get_embedding(text)
-            lance_row = {**row, 'embedding': embedding}
-            data.append(lance_row)
-            if self.row_count % 1000 == 0:
-                table.add(data)
-                data = []
-        if data:
-            table.add(data)
-        self._finalize_lance_output(lance_dir)
+    # def _process_rows_lance(self, reader, table, lance_dir):
+    #     data = []
+    #     self.row_count = 0
+    #     for row in reader:
+    #         self.row_count += 1
+    #         text = row[self._configuration.embedColumn]
+    #         embedding = self.get_embedding(text)
+    #         lance_row = {**row, 'embedding': embedding}
+    #         data.append(lance_row)
+    #         if self.row_count % 1000 == 0:
+    #             table.add(data)
+    #             data = []
+    #     if data:
+    #         table.add(data)
+    #     self._finalize_lance_output(lance_dir)
 
         
     def init_configuration(self):
@@ -117,28 +117,28 @@ class Component(ComponentBase):
 
         return self.create_out_table_definition(out_table_name)
     
-    def _get_lance_schema(self, fieldnames):
-        schema = pa.schema([
-            (name, pa.string()) for name in fieldnames
-        ] + [('embedding', pa.list_(pa.float32()))])
-        return schema
+    # def _get_lance_schema(self, fieldnames):
+    #     schema = pa.schema([
+    #         (name, pa.string()) for name in fieldnames
+    #     ] + [('embedding', pa.list_(pa.float32()))])
+    #     return schema
     
-    def _finalize_lance_output(self, lance_dir):
-        print("Zipping the Lance directory")
-        try:
-            zip_path = os.path.join(self.files_out_path, 'embeddings_lance.zip')
-            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-                for root, dirs, files in os.walk(lance_dir):
-                    for file in files:
-                        file_path = os.path.join(root, file)
-                        arcname = os.path.relpath(file_path, lance_dir)
-                        zipf.write(file_path, arcname)
-            print(f"Successfully zipped Lance directory to {zip_path}")
-            # Remove the original Lance directory
-            shutil.rmtree(lance_dir)
-        except Exception as e:
-            print(f"Error zipping Lance directory: {e}")
-            raise
+    # def _finalize_lance_output(self, lance_dir):
+    #     print("Zipping the Lance directory")
+    #     try:
+    #         zip_path = os.path.join(self.files_out_path, 'embeddings_lance.zip')
+    #         with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+    #             for root, dirs, files in os.walk(lance_dir):
+    #                 for file in files:
+    #                     file_path = os.path.join(root, file)
+    #                     arcname = os.path.relpath(file_path, lance_dir)
+    #                     zipf.write(file_path, arcname)
+    #         print(f"Successfully zipped Lance directory to {zip_path}")
+    #         # Remove the original Lance directory
+    #         shutil.rmtree(lance_dir)
+    #     except Exception as e:
+    #         print(f"Error zipping Lance directory: {e}")
+    #         raise
 
 if __name__ == "__main__":
     try:
