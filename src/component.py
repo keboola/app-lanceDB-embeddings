@@ -71,10 +71,10 @@ class Component(ComponentBase):
     def init_client(self):
         self.client = OpenAI(api_key=self._configuration.pswd_apiKey)
 
-    def get_embedding(self, text):
+    def get_embedding(self, texts):
         try:
-            response = self.client.embeddings.create(input=[text], model=self._configuration.model)
-            return response.data[0].embedding
+            response = self.client.embeddings.create(input=texts, model=self._configuration.model)
+            return [embedding['embedding'] for embedding in response.data]
         except Exception as e:
             raise UserException(f"Error getting embedding: {str(e)}")
         
