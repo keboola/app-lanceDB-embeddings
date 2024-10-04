@@ -95,6 +95,8 @@ class Component(ComponentBase):
         self.client = OpenAI(api_key=self._configuration.pswd_apiKey)
 
     def get_embedding(self, text):
+        if not isinstance(text, str) or not text.strip():
+            raise ValueError("Input text must be a non-empty string.")
         try:
             response = self.client.embeddings.create(input=[text], model=self._configuration.model)
             return response.data[0].embedding
